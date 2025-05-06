@@ -9,6 +9,8 @@ import {
   Tool,
 } from "@modelcontextprotocol/sdk/types.js";
 import { TodoistApi } from "@doist/todoist-api-typescript";
+import express from 'express';
+import http from 'http';
 
 // Define tools
 const CREATE_TASK_TOOL: Tool = {
@@ -411,9 +413,138 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
 });
 
 async function runServer() {
-  const transport = new StdioServerTransport();
-  await server.connect(transport);
-  console.error("Todoist MCP Server running on stdio");
+  // Check if running on Heroku (PORT env variable is set by Heroku)
+  const PORT = process.env.PORT;
+  
+  if (PORT) {
+    // Create a basic HTTP server for Heroku deployment
+    console.error("Running in HTTP mode for Heroku");
+    
+    const app = express();
+    const httpServer = http.createServer(app);
+    
+    // Simple health check
+    app.get('/', (req, res) => {
+      res.status(200).send('Todoist MCP Server is running');
+    });
+    
+    // MCP endpoint
+    app.post('/', express.json(), async (req, res) => {
+      try {
+        // Process request based on method
+        const { method, params, id } = req.body;
+        
+        let result;
+        if (method === 'list_tools') {
+          // Return the list of tools directly
+          result = {
+            tools: [CREATE_TASK_TOOL, GET_TASKS_TOOL, UPDATE_TASK_TOOL, DELETE_TASK_TOOL, COMPLETE_TASK_TOOL],
+          };
+        } else if (method === 'call_tool') {
+          // Handle tool calls directly
+          const { name, arguments: args } = params;
+          
+          if (!args) {
+            throw new Error("No arguments provided");
+          }
+          
+          if (name === "todoist_create_task") {
+            if (!isCreateTaskArgs(args)) {
+              throw new Error("Invalid arguments for todoist_create_task");
+            }
+            const task = await todoistClient.addTask({
+              content: args.content,
+              description: args.description,
+              dueString: args.due_string,
+              priority: args.priority
+            });
+            result = {
+              content: [{ 
+                type: "text", 
+                text: `Task created:\nTitle: ${task.content}${task.description ? `\nDescription: ${task.description}` : ''}${task.due ? `\nDue: ${task.due.string}` : ''}${task.priority ? `\nPriority: ${task.priority}` : ''}` 
+              }],
+              isError: false,
+            };
+          } else if (name === "todoist_get_tasks") {
+            // Handle get_tasks
+            if (!isGetTasksArgs(args)) {
+              throw new Error("Invalid arguments for todoist_get_tasks");
+            }
+            
+            // Use placeholder result for now
+            result = {
+              content: [{ type: "text", text: "Tasks would be listed here" }],
+              isError: false
+            };
+          } else if (name === "todoist_update_task") {
+            // Handle update_task
+            if (!isUpdateTaskArgs(args)) {
+              throw new Error("Invalid arguments for todoist_update_task");
+            }
+            
+            // Use placeholder result for now
+            result = {
+              content: [{ type: "text", text: "Task would be updated here" }],
+              isError: false
+            };
+          } else if (name === "todoist_delete_task") {
+            // Handle delete_task
+            if (!isDeleteTaskArgs(args)) {
+              throw new Error("Invalid arguments for todoist_delete_task");
+            }
+            
+            // Use placeholder result for now
+            result = {
+              content: [{ type: "text", text: "Task would be deleted here" }],
+              isError: false
+            };
+          } else if (name === "todoist_complete_task") {
+            // Handle complete_task
+            if (!isCompleteTaskArgs(args)) {
+              throw new Error("Invalid arguments for todoist_complete_task");
+            }
+            
+            // Use placeholder result for now
+            result = {
+              content: [{ type: "text", text: "Task would be completed here" }],
+              isError: false
+            };
+          } else {
+            throw new Error(`Unknown tool: ${name}`);
+          }
+        } else {
+          throw new Error(`Unknown method: ${method}`);
+        }
+        
+        // Send response
+        res.json({
+          jsonrpc: '2.0',
+          id,
+          result
+        });
+      } catch (error) {
+        console.error('Error handling request:', error);
+        res.status(500).json({ 
+          jsonrpc: '2.0',
+          id: req.body.id,
+          error: {
+            code: -32000,
+            message: error instanceof Error ? error.message : 'Internal server error',
+          }
+        });
+      }
+    });
+    
+    // Start HTTP server
+    httpServer.listen(parseInt(PORT), () => {
+      console.error(`Todoist MCP Server running on HTTP port ${PORT}`);
+    });
+  } else {
+    // stdio transport for local use
+    const transport = new StdioServerTransport();
+    await server.connect(transport);
+    console.error("Todoist MCP Server running on stdio");
+  }
 }
 
 runServer().catch((error) => {

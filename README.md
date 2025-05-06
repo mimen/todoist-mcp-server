@@ -141,6 +141,30 @@ npm install
 npm run build
 ```
 
+### Deploying to Heroku
+
+This MCP server is compatible with the Heroku MCP platform. To deploy:
+
+```bash
+# Login to Heroku CLI
+heroku login
+
+# Create a new Heroku app
+heroku create
+
+# Set your Todoist API token as an environment variable
+heroku config:set TODOIST_API_TOKEN=your_api_token_here
+
+# Deploy to Heroku
+git push heroku main
+```
+
+The `Procfile` is already configured with the proper `mcp-todoist` process type required by the Heroku MCP platform.
+
+#### Using with Heroku MCP Platform
+
+Once deployed, your Todoist MCP server will be available to the Heroku MCP platform without requiring additional configuration in your editor. The Heroku MCP platform will discover and utilize your server automatically.
+
 ## Contributing
 Contributions are welcome! Feel free to submit a Pull Request.
 

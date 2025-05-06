@@ -14,7 +14,8 @@
   "scripts": {
     "build": "tsc && shx chmod +x dist/*.js",
     "prepare": "npm run build",
-    "watch": "tsc --watch"
+    "watch": "tsc --watch",
+    "start": "node dist/index.js"
   },
   "repository": {
     "type": "git",
@@ -35,10 +36,12 @@
   "homepage": "https://github.com/abhiz123/todoist-mcp-server#readme",
   "dependencies": {
     "@doist/todoist-api-typescript": "^3.0.3",
-    "@modelcontextprotocol/sdk": "0.5.0",
-    "dotenv": "^16.5.0"
+    "@modelcontextprotocol/sdk": "^0.5.0",
+    "dotenv": "^16.5.0",
+    "express": "^5.1.0"
   },
   "devDependencies": {
+    "@types/express": "^5.0.1",
     "@types/node": "^22.10.1",
     "shx": "^0.3.4",
     "typescript": "^5.7.2"

@@ -1,1 +1,1 @@
-mcp-todoist: node dist/index.js
+mcp-todoist: npm start
